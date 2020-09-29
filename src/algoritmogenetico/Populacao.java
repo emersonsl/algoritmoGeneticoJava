@@ -40,16 +40,17 @@ public class Populacao {
         
         for(Individuo ind: individuos){
             x = ind.getFenotipo();
-            y = (float) (100 + Math.abs(x*Math.sin(Math.sqrt(Math.abs(x)))));
+            y = (float) (100 + Math.abs(x*Math.sin(Math.sqrt(Math.abs(x))))); //função de ativação
             ind.setFitness(y);
         }
     }
     
-    public Individuo sorteio(){
+    public Individuo popRandomIndividuo(){
         float f = new Random().nextFloat();
         for(Individuo ind: individuos){
             if(f>=ind.getFaixaRoleta()[0] && f<=ind.getFaixaRoleta()[1]){
-                return ind;
+                individuos.remove(ind); //remove o individuo sorteado da população
+                return ind; //retorna o individuo sorteado
             }
         }
         return individuos.get(size()-1);
@@ -57,18 +58,18 @@ public class Populacao {
     
     public void calcularFitnessPercent(){
         float soma=0;
-        for(Individuo ind: individuos){
+        for(Individuo ind: individuos){ //somando fitness
             soma += ind.getFitness();
         }
-        for(Individuo ind: individuos){
+        for(Individuo ind: individuos){ //calculando o fitness relativo
             ind.setFitnessPercent((ind.getFitness()/soma));
         }
     }
     
     public void calcularRangeRoleta(){
-        Collections.sort(individuos);
+        Collections.sort(individuos); //ordenando a lista
         float ant = 0, atual;
-        for(Individuo ind: individuos){
+        for(Individuo ind: individuos){ //setando posição na roleta
             atual = ind.getFitnessPercent()+ant;
             ind.setFaixaRoleta(new float[]{ant,atual});
             ant = atual+Float.MIN_VALUE;
@@ -77,7 +78,7 @@ public class Populacao {
     
     public float getMediaPopulacao(){
         float soma=0;
-        for(Individuo ind: individuos){
+        for(Individuo ind: individuos){ //somando todos os fitness
             soma += ind.getFitness();
         }
         return soma/size();
@@ -85,12 +86,12 @@ public class Populacao {
     
     public void gerar(int tamanho){
         int qntBits = Integer.toBinaryString(tamanho-1).length();
-        for(int i=0; i<tamanho; i++){
+        for(int i=0; i<tamanho; i++){ //gerando população a partir de valores aleatórios dentro do intervalo do tamanho da mesma
             individuos.add(new Individuo(new Random().nextInt(tamanho), qntBits));
         }
     }
     
-    public int size(){
+    public int size(){ //retorna o tamanho da população
         return individuos.size();
     }
     
@@ -102,6 +103,13 @@ public class Populacao {
             s.append(ind.toString()).append("\n");
         });
         return s.toString().substring(0, s.length()-1);
+    }
+    
+    @Override
+    public Populacao clone() { //realiza uma cópia da população
+        List <Individuo> copia = new ArrayList<>();
+        copia.addAll(individuos);
+        return new Populacao(copia);
     }
     
 }

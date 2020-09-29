@@ -69,20 +69,20 @@ public class Individuo implements Comparable<Object>{
         return Integer.parseInt(cromossomo, 2);
     }
     public void mutarBit(){
-        int i = new Random().nextInt(cromossomo.length());
+        int i = new Random().nextInt(cromossomo.length()); //calculando ponto de corte, baseado na quantidade máxima de bits da representação
         mutarBit(i);
     }
     
     public void mutarBit(int i){
         char [] v = cromossomo.toCharArray();
-        v[i] = (v[i] == '0') ? '1' : '0';
+        v[i] = (v[i] == '0') ? '1' : '0'; //o bit na posição i recebe o valor inverso
         cromossomo = String.valueOf(v);
     }
     
     private void ajusteCromossomo(int qntBits){
         int diferenca = qntBits - cromossomo.length();
         StringBuilder zeros = new StringBuilder();
-        for(int i=0; i<diferenca; i++)
+        for(int i=0; i<diferenca; i++) //completando zeros a esquerda
             zeros.append("0");
         cromossomo = zeros.toString()+cromossomo;
     }

@@ -4,6 +4,9 @@
  * and open the template in the editor.
  */
 package algoritmogenetico;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -14,15 +17,18 @@ public class AlgoritmoGenetico {
     private float taxaCrossover;
     private float taxaMutacao;
     private int qntGeracoes;
+    private List <Populacao> geracoes;
     private int tamanhoPopulacao;
-    private Populacao populacao;
+    private Populacao populacaoAtual;
 
     public AlgoritmoGenetico() {
-        populacao = new Populacao();
+        populacaoAtual = new Populacao();
+        geracoes = new ArrayList<>();
     }
 
     public AlgoritmoGenetico(float taxaCrossover, float taxaMutacao, int qntGeracoes, int tamanhoPopulacao) {
-        populacao = new Populacao();
+        populacaoAtual = new Populacao();
+        geracoes = new ArrayList<>();
         this.taxaCrossover = taxaCrossover;
         this.taxaMutacao = taxaMutacao;
         this.qntGeracoes = qntGeracoes;
@@ -62,50 +68,50 @@ public class AlgoritmoGenetico {
     }
 
     public Populacao getPopulacao() {
-        return populacao;
+        return populacaoAtual;
     }
 
     public void setPopulacao(Populacao populacao) {
-        this.populacao = populacao;
+        this.populacaoAtual = populacao;
     }
     
-    public void executarAG(){
-        for(int i=0; i<qntGeracoes; i++){
-            populacao.gerar(tamanhoPopulacao);
-            executarRoleta();
-
-            Individuo pai = populacao.sorteio();
-            Individuo mae = populacao.sorteio();
-
-            executarCrossover(pai, mae);
-            
-            Individuo mult = populacao.sorteio();
-            executarMutacao(mult);
-            
-            executarRoleta();
-            removerExcesso();
-        }
+    
+    
+    public void executarAG(){ //executa o algoritmo genético
+        populacaoAtual.gerar(tamanhoPopulacao); //gera população com valores aleatórios
         
-    }
-    
-    private void removerExcesso(){
-        populacao.getIndividuos().remove(populacao.size()-1);
-        populacao.getIndividuos().remove(populacao.size()-1);
-    }
-    
-    private void executarRoleta(){
-        populacao.calcularFitness();
-        populacao.calcularFitnessPercent();
-        populacao.calcularRangeRoleta();
-    }
-    
-    private void executarCrossover(Individuo pai, Individuo mae){
-        Random r = new Random();
-        if(r.nextFloat()<taxaCrossover){
-            int qntBits = Integer.toBinaryString(tamanhoPopulacao-1).length();
-            int pc = r.nextInt(qntBits);
+        for(int i=0; i<qntGeracoes-1; i++){ //itera a quantidade de gerações definida
+            executarRoleta(); //avalia a população
             
-            String p1 = pai.getCromossomo().substring(0,pc);
+            geracoes.add(populacaoAtual.clone()); //adiciona uma cópia da população atual a lista de gerações
+            Populacao populacaoNova = new Populacao();
+            
+            for(int k=0; k<(tamanhoPopulacao/2); k++){ //realizando o cruzamento ou não
+                Individuo pai = populacaoAtual.popRandomIndividuo();
+                Individuo mae = populacaoAtual.popRandomIndividuo();
+                executarCrossover(pai, mae, populacaoNova);
+            }
+            
+            populacaoAtual=populacaoNova; //população é atualizada
+            executarMutacao(); //é feita a mutação de alguns individuos selecionados aleatóriamente
+            executarRoleta(); //avalia a nova população
+        }
+        geracoes.add(populacaoAtual.clone()); //adiciona a ultima população na lista de gerações
+    }
+        
+    private void executarRoleta(){ //calcula os parametros de uma população baseado-se na função de ativação
+        populacaoAtual.calcularFitness();
+        populacaoAtual.calcularFitnessPercent();
+        populacaoAtual.calcularRangeRoleta();
+    }
+    
+    private void executarCrossover(Individuo pai, Individuo mae, Populacao populacaoNova){ //executa o cruzamento ou não de individuos
+        Random r = new Random();
+        if(r.nextFloat()<taxaCrossover){ //se o número sorteado for menor que a taxa de cruzamento
+            int qntBits = Integer.toBinaryString(tamanhoPopulacao-1).length(); 
+            int pc = r.nextInt(qntBits); //sorteio do ponto de corte
+            
+            String p1 = pai.getCromossomo().substring(0,pc); 
             String p2 = pai.getCromossomo().substring(pc);
             
             String m1 = mae.getCromossomo().substring(0,pc);
@@ -114,26 +120,33 @@ public class AlgoritmoGenetico {
             Individuo filho1 = new Individuo(p1+m2);
             Individuo filho2 = new Individuo(m1+p2);
             
-            populacao.getIndividuos().add(filho1);
-            populacao.getIndividuos().add(filho2);
+            populacaoNova.getIndividuos().add(filho1); //adicionando filhos a nova população
+            populacaoNova.getIndividuos().add(filho2);
 
+        }else{ //caso não seja realizado o cruzamento, os pais são adicionados a nova população
+            populacaoNova.getIndividuos().add(pai); 
+            populacaoNova.getIndividuos().add(mae);
         }
         
     }
     
-    private void executarMutacao(Individuo ind){
-        if(new Random().nextFloat()<taxaMutacao){
+    private void executarMutacao(){ //itera a lista realizando a mutação os individuos caso o sorteio favoreça 
+        populacaoAtual.getIndividuos().stream().filter((ind) -> (new Random().nextFloat()<taxaMutacao)).forEachOrdered((Individuo ind) -> {
             ind.mutarBit();
-        }
+        });
     }
     
     @Override
     public String toString(){
         StringBuilder s = new StringBuilder();
         
-        s.append("melhor individuo: ").append(populacao.getIndividuos().get(0)).append("\n\nmedia: ");
-        s.append(populacao.getMediaPopulacao()).append("\n");
+        s.append("melhor individuo: ").append(populacaoAtual.getIndividuos().get(0)).append("\n\nmedia: ");
+        s.append(populacaoAtual.getMediaPopulacao()).append("\n");
         
         return s.toString();
+    }
+
+    public List <Populacao> getGeracoes() {
+        return geracoes;
     }
 }
